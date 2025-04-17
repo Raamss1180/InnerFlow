@@ -5,11 +5,14 @@ import SearchBar from '../components/SearchBar';
 import { colors, fontType } from '../theme';
 
 const { width } = Dimensions.get('window');
-export default function HomeScreen() {
-    const handleStartMeditation = () => {
-        console.log("Meditation started!");
-        };
+// export default function HomeScreen() {
+//     const handleStartMeditation = () => {
+//         console.log("Meditation started!");
+//         };
+//     }
 
+export default function HomeScreen() {
+    // Animasi Fade-in
     const fadeAnim = new Animated.Value(0);
 
     React.useEffect(() => {
@@ -19,7 +22,6 @@ export default function HomeScreen() {
             useNativeDriver: true,
         }).start();
     }, []);
-    
 
     return (
         <View style={styles.container}>
