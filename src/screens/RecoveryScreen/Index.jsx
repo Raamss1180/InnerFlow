@@ -1,9 +1,9 @@
 import React, { useState } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity } from 'react-native';
-import MeditationCard from '../components/MeditationCard';
-import SearchBar from '../components/SearchBar';
+import MeditationCard from '../../components/MeditationCard';
+import SearchBar from '../../components/SearchBar';
 import Ionicons from 'react-native-vector-icons/Ionicons';
-import { colors, fontType } from '../theme';
+import { colors, fontType } from '../../theme';
 
 const recoveryChecklist = [
   'Tidur minimal 7 jam',

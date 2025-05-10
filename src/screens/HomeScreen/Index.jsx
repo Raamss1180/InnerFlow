@@ -1,8 +1,8 @@
 import React from 'react';
 import { View, Text, ScrollView, TouchableOpacity, StyleSheet, Image, Dimensions, Animated } from 'react-native';
 import Ionicons from 'react-native-vector-icons/Ionicons';
-import SearchBar from '../components/SearchBar';
-import { colors, fontType } from '../theme';
+import SearchBar from '../../components/SearchBar';
+import { colors, fontType } from '../../theme';
 
 const { width } = Dimensions.get('window');
 // export default function HomeScreen() {
@@ -36,7 +36,7 @@ export default function HomeScreen() {
 
             {/* Banner */}
             <Animated.View style={[styles.bannerContainer, { opacity: fadeAnim }]}>
-                <Image source={require('../assets/images/banner.jpg')} style={styles.bannerImage} resizeMode="cover" />
+                <Image source={require('../../assets/images/banner.jpg')} style={styles.bannerImage} resizeMode="cover" />
                 <View style={styles.bannerTextContainer}>
                     <Text style={styles.bannerText}>Fokus. Tenang. Kuat.</Text>
                     <Text style={styles.bannerSubText}>Latih mental atletikmu dengan meditasi!</Text>
@@ -54,10 +54,10 @@ export default function HomeScreen() {
             {/* Rekomendasi Meditasi */}
             <Text style={styles.sectionTitle}>Rekomendasi untuk Anda</Text>
             <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.recommendationContainer}>
-                <RecommendationItem title="Meditasi Sebelum Bertanding" image={require('../assets/images/pre_match.jpg')} />
-                <RecommendationItem title="Mindfulness Recovery" image={require('../assets/images/recovery.jpg')} />
-                <RecommendationItem title="Meditasi Pagi" image={require('../assets/images/morning.jpg')} />
-                <RecommendationItem title="Pemulihan Cedera" image={require('../assets/images/injury_recovery.jpg')} />
+                <RecommendationItem title="Meditasi Sebelum Bertanding" image={require('../../assets/images/pre_match.jpg')} />
+                <RecommendationItem title="Mindfulness Recovery" image={require('../../assets/images/recovery.jpg')} />
+                <RecommendationItem title="Meditasi Pagi" image={require('../../assets/images/morning.jpg')} />
+                <RecommendationItem title="Pemulihan Cedera" image={require('../../assets/images/injury_recovery.jpg')} />
             </ScrollView>
         </View>
     );
