@@ -4,7 +4,7 @@ import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import { createStackNavigator } from '@react-navigation/stack';
 
-import { HomeScreen, RecoveryScreen, MeditationLibrary, DailyJournal, MeditationDetail, meditationList} from './src';
+import { HomeScreen, RecoveryScreen, MeditationLibrary, DailyJournal, MeditationDetail, JournalForm, meditationList, } from './src';
 
 const Tab = createBottomTabNavigator();
 const MeditationStackNav = createStackNavigator();
@@ -38,6 +38,17 @@ function HomeStackScreen() {
   );
 }
 
+const JournalStack = createStackNavigator();
+
+function JournalStackScreen() {
+  return (
+    <JournalStack.Navigator>
+      <JournalStack.Screen name="Journals" component={DailyJournal} options={{ title: 'Jurnal' }} />
+      <JournalStack.Screen name="JournalForm" component={JournalForm} options={{ title: 'Tambah Jurnal' }} />
+    </JournalStack.Navigator>
+  );
+}
+
 
 export default function App() {
   return (
@@ -67,7 +78,7 @@ export default function App() {
         <Tab.Screen name="Beranda" component={HomeStackScreen} />
         <Tab.Screen name="Recovery Hub" component={RecoveryScreen} />
         <Tab.Screen name="Meditasi" component={MeditationStack} />
-        <Tab.Screen name="Jurnal" component={DailyJournal} />
+        <Tab.Screen name="Jurnal" component={JournalStackScreen} />
       </Tab.Navigator>
     </NavigationContainer>
   );

@@ -1,45 +1,25 @@
 import React from 'react';
-import {View,Text, ScrollView, TouchableOpacity, StyleSheet, Image, Dimensions, Animated,} from 'react-native';
+import {View, Text, ScrollView, TouchableOpacity, StyleSheet, Image, TouchableWithoutFeedback, Animated} from 'react-native';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import { useNavigation } from '@react-navigation/native';
 import SearchBar from '../../components/SearchBar';
 import { colors, fontType } from '../../theme';
-import MeditationDetail from '../MeditationDetail/Index';
 import meditationList from '../../components/MeditationList';
 
 export default function HomeScreen() {
-
-  // Rekomendasi Meditasi Komponen
-const RecommendationItem = ({ content, title, image }) => {
   const navigation = useNavigation();
-  const item = meditationList.find((med) => med.title === title);
-
-  return (
-    <TouchableOpacity
-      style={styles.recommendationItem}
-      activeOpacity={0.8}
-      onPress={() => {
-        if (item) {
-          navigation.navigate('MeditationDetail', {
-            title: item.title,
-            content: item.content,
-            image: item.image,
-          });
-        }
-      }}
-    >
-      <Image source={image} style={styles.recommendationImage} resizeMode="cover" />
-      <Text style={styles.recommendationText}>{title}</Text>
-        <ScrollView showsVerticalScrollIndicator={false}>
-              <Text style={styles.content}>{content}</Text>
-            </ScrollView>
-    </TouchableOpacity>
-  );
-};
-
-  const fadeAnim = new Animated.Value(0);
+  const fadeAnim = React.useRef(new Animated.Value(0)).current;
+  const categoryAnim = React.useRef(new Animated.Value(0)).current;
 
   React.useEffect(() => {
+    Animated.stagger(200, [
+      Animated.timing(categoryAnim, {
+        toValue: 1,
+        duration: 500,
+        useNativeDriver: true,
+      }),
+    ]).start();
+
     Animated.timing(fadeAnim, {
       toValue: 1,
       duration: 800,
@@ -69,10 +49,10 @@ const RecommendationItem = ({ content, title, image }) => {
 
       {/* Kategori */}
       <View style={styles.categoryContainer}>
-        <CategoryItem icon="fitness" title="Fokus" />
-        <CategoryItem icon="leaf" title="Relaksasi" />
-        <CategoryItem icon="cloud-outline" title="Pernapasan" />
-        <CategoryItem icon="journal-outline" title="Jurnal" />
+        <CategoryItem icon="fitness" title="Fokus" anim={categoryAnim} />
+        <CategoryItem icon="leaf" title="Relaksasi" anim={categoryAnim} />
+        <CategoryItem icon="cloud-outline" title="Pernapasan" anim={categoryAnim} />
+        <CategoryItem icon="journal-outline" title="Jurnal" anim={categoryAnim} />
       </View>
 
       {/* Rekomendasi Meditasi */}
@@ -88,12 +68,52 @@ const RecommendationItem = ({ content, title, image }) => {
 }
 
 // Kategori Komponen
-const CategoryItem = ({ icon, title }) => (
-  <TouchableOpacity style={styles.categoryItem}>
-    <Ionicons name={icon} size={24} color={colors.textLight} />
-    <Text style={styles.categoryText}>{title}</Text>
-  </TouchableOpacity>
+const CategoryItem = ({ icon, title, anim }) => (
+    <TouchableOpacity style={styles.categoryItem}>
+      <Ionicons name={icon} size={24} color={colors.textLight} />
+      <Text style={styles.categoryText}>{title}</Text>
+    </TouchableOpacity>
 );
+
+// Rekomendasi Meditasi Komponen
+const RecommendationItem = ({ title, image }) => {
+  const navigation = useNavigation();
+  const item = meditationList.find((med) => med.title === title);
+  const scaleAnim = React.useRef(new Animated.Value(1)).current;
+
+  const onPressIn = () => {
+    Animated.spring(scaleAnim, {
+      toValue: 0.95,
+      useNativeDriver: true,
+    }).start();
+  };
+
+  const onPressOut = () => {
+    Animated.spring(scaleAnim, {
+      toValue: 1,
+      useNativeDriver: true,
+    }).start(() => {
+      if (item) {
+        navigation.navigate('MeditationDetail', {
+          title: item.title,
+          content: item.content,
+          image: item.image,
+        });
+      }
+    });
+  };
+
+  return (
+    <Animated.View style={[styles.recommendationItem, { transform: [{ scale: scaleAnim }] }]}>
+      <TouchableWithoutFeedback onPressIn={onPressIn} onPressOut={onPressOut}>
+        <View>
+          <Image source={image} style={styles.recommendationImage} resizeMode="cover" />
+          <Text style={styles.recommendationText}>{title}</Text>
+        </View>
+      </TouchableWithoutFeedback>
+    </Animated.View>
+  );
+};
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.background, padding: 20 },
@@ -132,18 +152,18 @@ const styles = StyleSheet.create({
   },
   categoryItem: {
     width: '48%',
+    height: 90,
     alignItems: 'center',
     justifyContent: 'center',
     backgroundColor: colors.primary,
     paddingVertical: 15,
     borderRadius: 15,
-    height: 90,
     marginBottom: 10,
   },
   categoryText: { fontSize: 14, fontFamily: fontType.medium, color: colors.textLight, marginTop: 5 },
 
   // Rekomendasi
-  sectionTitle: { fontSize: 18, fontFamily: fontType.bold, color: colors.textDark, marginTop: -10, marginBottom: 5 },
+  sectionTitle: { fontSize: 18, fontFamily: fontType.bold, color: colors.textDark, marginTop: -5, marginBottom: 5 },
   recommendationContainer: { flexDirection: 'row', paddingBottom: 0 },
   recommendationItem: {
     width: 150,
@@ -160,5 +180,10 @@ const styles = StyleSheet.create({
     resizeMode: 'contain',
     aspectRatio: 1,
   },
-  recommendationText: { padding: 10, fontSize: 14, fontFamily: fontType.medium, color: colors.textDark },
+  recommendationText: {
+    padding: 10,
+    fontSize: 14,
+    fontFamily: fontType.medium,
+    color: colors.textDark,
+  },
 });
