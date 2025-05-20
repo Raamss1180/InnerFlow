@@ -1,22 +1,63 @@
-import React, { useState, useEffect } from 'react';
-import { View, Text, FlatList, StyleSheet, TouchableOpacity, LayoutAnimation, Platform, UIManager,} from 'react-native';
+import React, { useState, useCallback } from 'react';
+import { View, Text, FlatList, StyleSheet, TouchableOpacity, Alert, LayoutAnimation, Platform, UIManager,} from 'react-native';
 import Ionicons from 'react-native-vector-icons/Ionicons';
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, useFocusEffect  } from '@react-navigation/native';
 import { colors, fontType } from '../../theme';
-import JournalData from '../../components/JournalData';
+import { getJournals, deleteJournal } from '../../services/JournalAPI';
 
-// Aktifkan LayoutAnimation di Android
+// Aktifkan animasi layout Android
 if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {
   UIManager.setLayoutAnimationEnabledExperimental(true);
 }
 
 const DailyJournal = () => {
   const navigation = useNavigation();
+  const [journals, setJournals] = useState([]);
   const [expandedId, setExpandedId] = useState(null);
+
+  useFocusEffect(
+    useCallback(() => {
+      fetchJournals();
+    }, [])
+  );
+
+  const fetchJournals = async () => {
+    try {
+      const response = await getJournals();
+      setJournals(response.data.reverse());
+    } catch (error) {
+      console.error('Gagal mengambil jurnal:', error);
+    }
+  };
 
   const handlePressJournal = (id) => {
     LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
     setExpandedId(expandedId === id ? null : id);
+  };
+
+  const handleDelete = (id) => {
+    Alert.alert('Konfirmasi', 'Yakin ingin menghapus jurnal ini?', [
+      {
+        text: 'Batal',
+        style: 'cancel',
+      },
+      {
+        text: 'Hapus',
+        style: 'destructive',
+        onPress: async () => {
+          try {
+            await deleteJournal(id);
+            fetchJournals(); // refresh data
+          } catch (err) {
+            Alert.alert('Gagal', 'Gagal menghapus jurnal.');
+          }
+        },
+      },
+    ]);
+  };
+
+  const handleEdit = (item) => {
+    navigation.navigate('JournalForm', { journal: item }); // kirim data untuk diedit
   };
 
   const renderItem = ({ item }) => {
@@ -26,15 +67,33 @@ const DailyJournal = () => {
       <TouchableOpacity
         style={styles.journalCard}
         onPress={() => handlePressJournal(item.id)}
+        activeOpacity={0.9}
       >
         <Text style={styles.journalTitle}>{item.title}</Text>
         <Text style={styles.journalAuthor}>oleh {item.author}</Text>
-        <Text
-          style={styles.journalContent}
-          numberOfLines={isExpanded ? 0 : 2}
-        >
+        <Text style={styles.journalContent} numberOfLines={isExpanded ? 0 : 2}>
           {item.content}
         </Text>
+
+        {isExpanded && (
+          <View style={styles.actions}>
+            <TouchableOpacity
+              style={[styles.actionButton, { backgroundColor: '#f39c12' }]}
+              onPress={() => handleEdit(item)}
+            >
+              <Ionicons name="create-outline" size={20} color="#fff" />
+              <Text style={styles.actionText}>Edit</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={[styles.actionButton, { backgroundColor: '#e74c3c' }]}
+              onPress={() => handleDelete(item.id)}
+            >
+              <Ionicons name="trash-outline" size={20} color="#fff" />
+              <Text style={styles.actionText}>Hapus</Text>
+            </TouchableOpacity>
+          </View>
+        )}
+
         <Text style={styles.expandText}>
           {isExpanded ? 'Tutup' : 'Baca selengkapnya...'}
         </Text>
@@ -47,7 +106,7 @@ const DailyJournal = () => {
       <Text style={styles.title}>Daftar Jurnal</Text>
 
       <FlatList
-        data={JournalData}
+        data={journals}
         renderItem={renderItem}
         keyExtractor={(item) => item.id}
         contentContainerStyle={{ paddingBottom: 80 }}
@@ -84,10 +143,6 @@ const styles = StyleSheet.create({
     padding: 15,
     marginBottom: 12,
     elevation: 3,
-    shadowColor: '#000',
-    shadowOpacity: 0.1,
-    shadowRadius: 6,
-    shadowOffset: { width: 0, height: 3 },
   },
   journalTitle: {
     fontSize: 16,
@@ -123,5 +178,26 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     elevation: 6,
+  },
+  actions: {
+    flexDirection: 'row',
+    justifyContent: 'flex-end',
+    marginTop: 15,
+    gap: 10,
+    marginBottom: -35,
+  },
+  actionButton: {
+    flexDirection: 'column',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingVertical: 6,
+    paddingHorizontal: 12,
+    borderRadius: 8,
+  },
+  actionText: {
+    marginLeft: 6,
+    color: '#fff',
+    fontSize: 13,
+    fontFamily: fontType.medium,
   },
 });

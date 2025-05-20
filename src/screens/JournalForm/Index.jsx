@@ -1,27 +1,64 @@
-import React, { useState } from 'react';
-import { View, Text, TextInput, StyleSheet, TouchableOpacity, Alert } from 'react-native';
+import React, { useState, useEffect } from 'react';
+import {
+  View,
+  Text,
+  TextInput,
+  StyleSheet,
+  TouchableOpacity,
+  Alert,
+} from 'react-native';
+import { useNavigation, useRoute } from '@react-navigation/native';
 import { colors, fontType } from '../../theme';
+import { addJournal, updateJournal } from '../../services/JournalAPI';
 
 const JournalForm = () => {
+  const navigation = useNavigation();
+  const route = useRoute();
+  const isEdit = !!route.params?.journal;
+
   const [title, setTitle] = useState('');
   const [author, setAuthor] = useState('');
   const [entry, setEntry] = useState('');
 
-  const handleSubmit = () => {
+  useEffect(() => {
+    if (isEdit) {
+      const { title, author, content } = route.params.journal;
+      setTitle(title);
+      setAuthor(author);
+      setEntry(content);
+    }
+  }, [isEdit]);
+
+  const handleSubmit = async () => {
     if (!title || !author || !entry) {
       Alert.alert('Peringatan', 'Semua kolom harus diisi!');
       return;
     }
 
-    Alert.alert('Tersimpan', 'Catatan harian kamu telah disimpan!');
-    setTitle('');
-    setAuthor('');
-    setEntry('');
+    try {
+      if (isEdit) {
+        await updateJournal(route.params.journal.id, {
+          title,
+          author,
+          content: entry,
+        });
+        Alert.alert('Berhasil', 'Jurnal berhasil diperbarui!');
+      } else {
+        await addJournal({ title, author, content: entry });
+        Alert.alert('Berhasil', 'Jurnal berhasil ditambahkan!');
+      }
+
+      navigation.goBack();
+    } catch (err) {
+      Alert.alert('Error', 'Gagal menyimpan jurnal.');
+    }
   };
 
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>Tambah Jurnal</Text>
+      <Text style={styles.title}>
+        {isEdit ? 'Edit Jurnal' : 'Tambah Jurnal'}
+      </Text>
 
       <TextInput
         style={styles.input}
@@ -44,7 +81,9 @@ const JournalForm = () => {
       />
 
       <TouchableOpacity onPress={handleSubmit} style={styles.button}>
-        <Text style={styles.buttonText}>Simpan Jurnal</Text>
+        <Text style={styles.buttonText}>
+          {isEdit ? 'Perbarui Jurnal' : 'Simpan Jurnal'}
+        </Text>
       </TouchableOpacity>
     </View>
   );
