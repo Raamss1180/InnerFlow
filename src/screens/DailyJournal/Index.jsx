@@ -1,9 +1,27 @@
 import React, { useState, useCallback } from 'react';
-import { View, Text, FlatList, StyleSheet, TouchableOpacity, Alert, LayoutAnimation, Platform, UIManager,} from 'react-native';
+import {
+  View,
+  Text,
+  FlatList,
+  StyleSheet,
+  TouchableOpacity,
+  Alert,
+  LayoutAnimation,
+  Platform,
+  UIManager,
+} from 'react-native';
 import Ionicons from 'react-native-vector-icons/Ionicons';
-import { useNavigation, useFocusEffect  } from '@react-navigation/native';
+import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import { colors, fontType } from '../../theme';
-import { getJournals, deleteJournal } from '../../services/JournalAPI';
+import {
+  collection,
+  getFirestore,
+  onSnapshot,
+  deleteDoc,
+  doc,
+  query,
+  orderBy
+} from '@react-native-firebase/firestore';
 
 // Aktifkan animasi layout Android
 if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {
@@ -17,18 +35,21 @@ const DailyJournal = () => {
 
   useFocusEffect(
     useCallback(() => {
-      fetchJournals();
+      const db = getFirestore();
+      const journalRef = collection(db, 'journal');
+      const q = query(journalRef, orderBy('createdAt', 'desc'));
+
+      const unsubscribe = onSnapshot(q, snapshot => {
+        const journalList = snapshot.docs.map(doc => ({
+          id: doc.id,
+          ...doc.data(),
+        }));
+        setJournals(journalList);
+      });
+
+      return () => unsubscribe();
     }, [])
   );
-
-  const fetchJournals = async () => {
-    try {
-      const response = await getJournals();
-      setJournals(response.data.reverse());
-    } catch (error) {
-      console.error('Gagal mengambil jurnal:', error);
-    }
-  };
 
   const handlePressJournal = (id) => {
     LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
@@ -46,8 +67,8 @@ const DailyJournal = () => {
         style: 'destructive',
         onPress: async () => {
           try {
-            await deleteJournal(id);
-            fetchJournals(); // refresh data
+            const db = getFirestore();
+            await deleteDoc(doc(db, 'journal', id));
           } catch (err) {
             Alert.alert('Gagal', 'Gagal menghapus jurnal.');
           }
@@ -132,7 +153,7 @@ const styles = StyleSheet.create({
   },
   title: {
     fontSize: 24,
-    fontFamily: fontType.bold,
+    fontFamily: fontType.judul,
     color: colors.textDark,
     marginTop: 20,
     marginBottom: 15,
@@ -146,12 +167,12 @@ const styles = StyleSheet.create({
   },
   journalTitle: {
     fontSize: 16,
-    fontFamily: fontType.medium,
+    fontFamily: fontType.judul,
     color: colors.textDark,
   },
   journalAuthor: {
     fontSize: 14,
-    fontFamily: fontType.regular,
+    fontFamily: fontType.judul2,
     color: '#555',
     marginTop: 4,
   },

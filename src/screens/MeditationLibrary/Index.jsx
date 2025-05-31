@@ -34,10 +34,10 @@ const MeditationLibrary = () => {
 export default MeditationLibrary;
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: colors.background, padding: 20 },
+  container: { flex: 1, backgroundColor: colors.background, padding: 20, },
   title: {
     fontSize: 24,
-    fontFamily: fontType.bold,
+    fontFamily: fontType.judul,
     color: colors.textDark,
     marginBottom: 15,
   },

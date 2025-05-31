@@ -26,7 +26,7 @@ const styles = StyleSheet.create({
   },
   title: {
     fontSize: 24,
-    fontFamily: fontType.bold,
+    fontFamily: fontType.judul,
     marginBottom: 15,
     color: colors.textDark,
   },

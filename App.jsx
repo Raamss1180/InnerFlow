@@ -21,7 +21,7 @@ function MeditationStack() {
       <MeditationStackNav.Screen
         name="MeditationDetail"
         component={MeditationDetail}
-        options={{ title: 'Detail Meditasi' }}
+        options={{ title: 'Detail Meditasi', headerTitleStyle: {fontFamily: 'AMORIA', fontSize: 22,} }}
       />
     </MeditationStackNav.Navigator>
   );
@@ -33,7 +33,7 @@ function HomeStackScreen() {
   return (
     <HomeStack.Navigator>
       <HomeStack.Screen name="HomeScreen" component={HomeScreen} options={{ headerShown: false }} />
-      <HomeStack.Screen name="MeditationDetail" component={MeditationDetail} options={{ title: 'Detail Meditasi' }} />
+      <HomeStack.Screen name="MeditationDetail" component={MeditationDetail} options={{ title: 'Detail Meditasi', headerTitleStyle: {fontFamily: 'AMORIA', fontSize: 22,} }} />
     </HomeStack.Navigator>
   );
 }
@@ -43,8 +43,8 @@ const JournalStack = createStackNavigator();
 function JournalStackScreen() {
   return (
     <JournalStack.Navigator>
-      <JournalStack.Screen name="Journals" component={DailyJournal} options={{ title: 'Jurnal' }} />
-      <JournalStack.Screen name="JournalForm" component={JournalForm} options={{ title: 'Tambah Jurnal' }} />
+      <JournalStack.Screen name="Journals" component={DailyJournal} options={{ title: 'InnerFlow', headerTitleStyle: {fontFamily: 'AMORIA', fontSize: 22,} }} />
+      <JournalStack.Screen name="JournalForm" component={JournalForm} options={{ title: 'Tambah Jurnal', headerTitleStyle: {fontFamily: 'AMORIA', fontSize: 22,} }} />
     </JournalStack.Navigator>
   );
 }

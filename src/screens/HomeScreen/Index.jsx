@@ -116,9 +116,9 @@ const RecommendationItem = ({ title, image }) => {
 };
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: colors.background, padding: 20 },
+  container: { flex: 1, backgroundColor: colors.background, padding: 20, },
   header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 15 },
-  title: { fontSize: 28, fontFamily: fontType.bold, color: colors.textDark },
+  title: { fontSize: 26, fontFamily: fontType.judul, color: colors.textDark },
 
   // Banner
   bannerContainer: {

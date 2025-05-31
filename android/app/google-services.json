@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "70555000194",
+    "project_id": "innerflow-73257",
+    "storage_bucket": "innerflow-73257.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:70555000194:android:b0f311b44f03f3a5cf839b",
+        "android_client_info": {
+          "package_name": "com.innerflow"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCNI3kq3g3-puXye-VL2TFAx97OgeYUp-k"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

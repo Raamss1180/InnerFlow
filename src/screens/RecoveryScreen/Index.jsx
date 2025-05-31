@@ -71,7 +71,7 @@ const RecoveryScreen = () => {
 export default RecoveryScreen;
 
 const styles = StyleSheet.create({
-  title: { fontSize: 28, fontFamily: fontType.bold, color: colors.textDark },
+  title: { fontSize: 28, fontFamily: fontType.judul, color: colors.textDark },
   header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 15 },
 
   checklistWrapper: {
@@ -89,7 +89,7 @@ const styles = StyleSheet.create({
     marginBottom: 10,
   },
 
-  container: { flex: 1, backgroundColor: '#fff', padding: 16 },
+  container: { flex: 1, backgroundColor: '#fff', padding: 16,},
   heading: { fontSize: 20, fontWeight: 'bold', marginTop: 24, marginBottom: 12 },
   checkItem: {
     paddingVertical: 10,
