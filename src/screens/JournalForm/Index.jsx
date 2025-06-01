@@ -1,165 +1,277 @@
-import React, { useState, useEffect } from 'react';
-import {View,Text,TextInput,StyleSheet,TouchableOpacity,Alert,ActivityIndicator,ScrollView} from 'react-native';
+import React, { useState, useEffect, useMemo } from 'react';
+import {View,Text,TextInput,TouchableOpacity,StyleSheet,Alert,ScrollView,Platform,} from 'react-native';
 import { useNavigation, useRoute } from '@react-navigation/native';
-import { colors, fontType } from '../../theme';
-import {addDoc,updateDoc,doc,getFirestore,serverTimestamp, collection} from '@react-native-firebase/firestore';
+import notifee, { AndroidImportance } from '@notifee/react-native';
+import { fonts, colors, fontType } from '../../theme'; 
+import {getFirestore,doc,setDoc,updateDoc,serverTimestamp} from '@react-native-firebase/firestore';
+
+
+const tampilkanNotifikasiJurnalBerhasil = async (judulJurnal) => {
+  try {
+    await notifee.requestPermission();
+    const channelId = await notifee.createChannel({
+      id: 'innerflow_journal_channel_firestore',
+      name: 'InnerFlow Journal Firestore Notifications',
+      importance: AndroidImportance.HIGH,
+    });
+    await notifee.displayNotification({
+      title: 'Jurnal Tersimpan! 📝',
+      body: `Jurnalmu "${judulJurnal || 'Tanpa Judul'}" berhasil di upload!`,
+      android: {
+        channelId: channelId,
+        smallIcon: 'ic_launcher', 
+        pressAction: { id: 'default' },
+      },
+    });
+    console.log('Notifikasi penyimpanan jurnal (Firestore) berhasil ditampilkan!');
+  } catch (error) {
+    console.error('Gagal menampilkan notifikasi penyimpanan jurnal (Firestore):', error);
+  }
+};
 
 const JournalForm = () => {
   const navigation = useNavigation();
   const route = useRoute();
-  const isEdit = !!route.params?.journal;
+  const existingJournalData = route.params?.journal;
+  const initialDate = useMemo(() => {
+    return existingJournalData?.date || route.params?.date || new Date().toISOString();
+  }, [route.params?.date, existingJournalData?.date]);
+
 
   const [title, setTitle] = useState('');
   const [author, setAuthor] = useState('');
-  const [entry, setEntry] = useState('');
-  const [loading, setLoading] = useState(false);
+  const [content, setContent] = useState('');
+  const [mood, setMood] = useState('');
+  const [isEditing, setIsEditing] = useState(false);
+  const [journalId, setJournalId] = useState(null);
+  const [currentDate, setCurrentDate] = useState(initialDate);
+
+  const placeholderColor = '#888888'; 
 
   useEffect(() => {
-    if (isEdit) {
-      const { title, author, content } = route.params.journal;
-      setTitle(title);
-      setAuthor(author);
-      setEntry(content);
+    if (existingJournalData) {
+      setTitle(existingJournalData.title || '');
+      setAuthor(existingJournalData.author || '');
+      setContent(existingJournalData.content || '');
+      setMood(existingJournalData.mood || '');
+      setCurrentDate(existingJournalData.date || initialDate); 
+      setIsEditing(true);
+      setJournalId(existingJournalData.id); 
+    } else {
+      setTitle('');
+      setAuthor('');
+      setContent('');
+      setMood('');
+      setCurrentDate(initialDate);
+      setIsEditing(false);
+      setJournalId(null);
     }
-  }, [isEdit]);
+  }, [existingJournalData, initialDate]);
 
-  const handleSubmit = async () => {
-    if (!title || !author || !entry) {
-      Alert.alert('Peringatan', 'Semua kolom harus diisi!');
+  const handleSaveJournal = async () => {
+    if (!title.trim() || !author.trim() || !content.trim() || !mood.trim()) {
+      Alert.alert('Kesalahan Input', 'Judul, Penulis, Isi Jurnal, dan Mood tidak boleh kosong.');
       return;
     }
 
-    setLoading(true);
     const db = getFirestore();
+    const journalPayload = {
+      title: title.trim(),
+      author: author.trim(),
+      content: content.trim(),
+      date: currentDate,
+      mood: mood,
+    };
 
     try {
-      if (isEdit) {
-        const ref = doc(db, 'journal', route.params.journal.id);
-        await updateDoc(ref, {
-          title,
-          author,
-          content: entry,
+      if (isEditing && journalId) {
+        const journalRef = doc(db, 'journal', journalId);
+        await updateDoc(journalRef, {
+          ...journalPayload,
           updatedAt: serverTimestamp(),
         });
-        Alert.alert('Berhasil', 'Jurnal berhasil diperbarui!');
+        Alert.alert('Sukses', 'Jurnal berhasil diperbarui di cloud!');
       } else {
-        const journalRef = collection(db, 'journal');
-        await addDoc(journalRef, {
-          title,
-          author,
-          content: entry,
-          createdAt: serverTimestamp(),
+        const newJournalId = Date.now().toString();
+        const journalRef = doc(db, 'journal', newJournalId);
+        await setDoc(journalRef, {
+          ...journalPayload,
+          id: newJournalId,
+          createdAt: serverTimestamp(), 
         });
-        Alert.alert('Berhasil', 'Jurnal berhasil ditambahkan!');
+        Alert.alert('Sukses', 'Jurnal berhasil disimpan di cloud!');
       }
 
-      setLoading(false);
-      navigation.goBack();
-    } catch (err) {
-      console.error(err);
-      setLoading(false);
-      Alert.alert('Error', 'Gagal menyimpan jurnal.');
+      await tampilkanNotifikasiJurnalBerhasil(title); 
+      navigation.goBack(); 
+
+    } catch (error) {
+      console.error('Error saat menyimpan jurnal ke Firestore:', error);
+      Alert.alert(
+        'Gagal Menyimpan',
+        `Terjadi kesalahan saat menyimpan jurnal ke cloud. Error: ${error.message}`
+      );
     }
   };
 
+  const handleMoodSelection = (selectedMood) => {
+    setMood(selectedMood);
+  };
+
+  const moods = ['Senang😊', 'Sedih😢', 'Marah🤬', 'Tenang😌', 'Bersemangat🤩', 'Biasa Saja😐'];
+
   return (
-    <View style={styles.container}>
-      <ScrollView contentContainerStyle={{ paddingBottom: 30 }}>
-        <Text style={styles.Judul}>
-          {isEdit ? 'Edit Jurnal' : 'Tambah Jurnal'}
-        </Text>
+    <ScrollView style={styles.container} contentContainerStyle={styles.contentContainer}>
+      <Text style={styles.header}>{isEditing ? 'Edit Jurnal' : 'Form Jurnal Baru'}</Text>
+      <Text style={styles.dateText}>
+        Tanggal Jurnal: {new Date(currentDate).toLocaleDateString('id-ID', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
+      </Text>
 
-        <Text style={styles.title}>Judul Jurnal</Text>
-        <TextInput
-          style={styles.input}
-          placeholder="Judul Jurnal"
-          value={title}
-          onChangeText={setTitle}
-        />
+      <Text style={styles.label}>Judul Jurnal</Text>
+      <TextInput
+        style={styles.input}
+        placeholder="Masukkan judul jurnal Anda..."
+        value={title}
+        onChangeText={setTitle}
+        placeholderTextColor={placeholderColor}
+      />
 
-        <Text style={styles.title}>Author</Text>
-        <TextInput
-          style={styles.input}
-          placeholder="Nama Penulis"
-          value={author}
-          onChangeText={setAuthor}
-        />
+      <Text style={styles.label}>Penulis</Text>
+      <TextInput
+        style={styles.input}
+        placeholder="Masukkan nama penulis..."
+        value={author}
+        onChangeText={setAuthor}
+        placeholderTextColor={placeholderColor}
+      />
 
-        <Text style={styles.title}>Content</Text>
-        <TextInput
-          style={[styles.input, styles.textArea]}
-          multiline
-          placeholder="Tuliskan perasaan dan pikiranmu hari ini..."
-          value={entry}
-          onChangeText={setEntry}
-        />
+      <Text style={styles.label}>Isi Jurnal</Text>
+      <TextInput
+        style={[styles.input, styles.contentInput]}
+        placeholder="Apa yang kamu rasakan dan pikirkan hari ini?..."
+        value={content}
+        onChangeText={setContent}
+        multiline
+        textAlignVertical="top" 
+        placeholderTextColor={placeholderColor}
+      />
 
-        <TouchableOpacity onPress={handleSubmit} style={styles.button}>
-          <Text style={styles.buttonText}>
-            {isEdit ? 'Perbarui Jurnal' : 'Simpan Jurnal'}
-          </Text>
-        </TouchableOpacity>
-      </ScrollView>
+      <Text style={styles.moodHeader}>Bagaimana Mood Kamu Hari Ini?</Text>
+      <View style={styles.moodContainer}>
+        {moods.map((m) => (
+          <TouchableOpacity
+            key={m}
+            style={[styles.moodButton, mood === m && styles.selectedMoodButton]}
+            onPress={() => handleMoodSelection(m)}>
+            <Text style={[styles.moodText, mood === m && styles.selectedMoodText]}>{m}</Text>
+          </TouchableOpacity>
+        ))}
+      </View>
 
-      {loading && (
-        <View style={styles.loadingOverlay}>
-          <ActivityIndicator size="large" color={colors.primary} />
-        </View>
-      )}
-    </View>
+      <TouchableOpacity style={styles.saveButton} onPress={handleSaveJournal}>
+        <Text style={styles.saveButtonText}>{isEditing ? 'Simpan Perubahan' : 'Upload Jurnal'}</Text>
+      </TouchableOpacity>
+    </ScrollView>
   );
 };
-
-export default JournalForm;
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: colors.background,
+    backgroundColor: colors.background || '#F5F5F5', 
+  },
+  contentContainer: {
     padding: 20,
+    paddingBottom: 40,
   },
-  Judul :{
-    fontSize: 24,
-    fontFamily: fontType.judul,
+  header: {
+    fontSize: 26, 
+    fontFamily: fontType.judul, 
+    color: colors.primary || '#1E88E5',
     marginBottom: 15,
+    textAlign: 'center',
   },
-  title: {
-    fontSize: 12,
-    fontFamily: fontType.judul,
-    color: colors.textDark,
+  dateText: {
+    fontSize: 15,
+    fontFamily: fontType.medium, 
+    color: colors.textSecondary || '#555555',
+    marginBottom: 20,
+    textAlign: 'center',
+  },
+  label: {
+    fontSize: 16,
+    fontFamily: fontType.medium,
+    color: colors.textDark || '#333333', 
+    marginBottom: 8,
   },
   input: {
-    borderColor: '#ccc',
+    backgroundColor: colors.inputBackground || '#FFFFFF', 
+    borderRadius: 8, 
+    paddingHorizontal: 15,
+    paddingVertical: Platform.OS === 'ios' ? 14 : 10, 
+    fontSize: 15,
+    fontFamily: fontType.regular, 
+    color: colors.textDark || '#212121', 
+    marginBottom: 18, 
     borderWidth: 1,
-    borderRadius: 10,
-    padding: 12,
-    fontFamily: fontType.regular,
-    backgroundColor: '#f9f9f9',
-    marginBottom: 12,
+    borderColor: colors.border || '#CCCCCC', 
   },
-  textArea: {
-    height: 160,
+  contentInput: {
+    height: 180, 
     textAlignVertical: 'top',
   },
-  button: {
-    marginTop: 10,
-    backgroundColor: colors.primary,
-    padding: 15,
-    borderRadius: 10,
+  moodHeader: {
+    fontSize: 17, 
+    fontFamily: fontType.medium,
+    color: colors.textDark || '#333333',
+    marginTop: 5, 
+    marginBottom: 12,
   },
-  buttonText: {
-    textAlign: 'center',
-    color: '#fff',
-    fontFamily: fontType.judul,
+  moodContainer: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    justifyContent: 'space-around',
+    marginBottom: 25,
   },
-  loadingOverlay: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-    backgroundColor: 'rgba(0,0,0,0.2)',
-    justifyContent: 'center',
+  moodButton: {
+    backgroundColor: colors.inputBackground || '#E0E0E0', 
+    paddingVertical: 10,
+    paddingHorizontal: 12, 
+    borderRadius: 18, 
+    borderWidth: 1,
+    borderColor: colors.border || '#BDBDBD', 
+    marginVertical: 5,
+    marginHorizontal: 3, 
     alignItems: 'center',
+    minWidth: '30%', 
+  },
+  selectedMoodButton: {
+    backgroundColor: colors.primary || '#1E88E5', 
+    borderColor: colors.primaryDark || colors.primary || '#1565C0',
+  },
+  moodText: {
+    fontSize: 13, 
+    fontFamily: fontType.regular,
+    color: colors.textDark || '#333333',
+  },
+  selectedMoodText: {
+    color: colors.textLight || '#FFFFFF', 
+    fontFamily: fontType.medium,
+  },
+  saveButton: {
+    backgroundColor: colors.accent || colors.primary || '#1976D2', 
+    paddingVertical: 14,
+    paddingHorizontal: 20,
+    borderRadius: 8,
+    alignItems: 'center',
+    marginTop: 25, 
+    elevation: 3,
+  },
+  saveButtonText: {
+    fontSize: 17, 
+    fontFamily: fontType.bold, 
+    color: colors.textLight || '#FFFFFF', 
   },
 });
+
+export default JournalForm;

@@ -1,27 +1,9 @@
 import React, { useState, useCallback } from 'react';
-import {
-  View,
-  Text,
-  FlatList,
-  StyleSheet,
-  TouchableOpacity,
-  Alert,
-  LayoutAnimation,
-  Platform,
-  UIManager,
-} from 'react-native';
+import {View,Text,FlatList,StyleSheet,TouchableOpacity,Alert,LayoutAnimation,Platform,UIManager,} from 'react-native';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
-import { colors, fontType } from '../../theme';
-import {
-  collection,
-  getFirestore,
-  onSnapshot,
-  deleteDoc,
-  doc,
-  query,
-  orderBy
-} from '@react-native-firebase/firestore';
+import { colors, fontType } from '../../theme'; 
+import {collection,getFirestore,onSnapshot,deleteDoc,doc,query,orderBy,} from '@react-native-firebase/firestore';
 
 // Aktifkan animasi layout Android
 if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {
@@ -45,6 +27,8 @@ const DailyJournal = () => {
           ...doc.data(),
         }));
         setJournals(journalList);
+      }, (error) => {
+        console.error("Error fetching journals: ", error);
       });
 
       return () => unsubscribe();
@@ -57,11 +41,8 @@ const DailyJournal = () => {
   };
 
   const handleDelete = (id) => {
-    Alert.alert('Konfirmasi', 'Yakin ingin menghapus jurnal ini?', [
-      {
-        text: 'Batal',
-        style: 'cancel',
-      },
+    Alert.alert('Konfirmasi Hapus', 'Apakah Anda yakin ingin menghapus jurnal ini?', [
+      { text: 'Batal', style: 'cancel' },
       {
         text: 'Hapus',
         style: 'destructive',
@@ -70,7 +51,8 @@ const DailyJournal = () => {
             const db = getFirestore();
             await deleteDoc(doc(db, 'journal', id));
           } catch (err) {
-            Alert.alert('Gagal', 'Gagal menghapus jurnal.');
+            console.error("Error deleting journal: ", err);
+            Alert.alert('Gagal', 'Gagal menghapus jurnal. Silakan coba lagi.');
           }
         },
       },
@@ -78,45 +60,81 @@ const DailyJournal = () => {
   };
 
   const handleEdit = (item) => {
-    navigation.navigate('JournalForm', { journal: item }); // kirim data untuk diedit
+    navigation.navigate('JournalForm', { journal: item });
+  };
+
+  const getMoodEmoji = (mood) => {
+    switch (mood?.toLowerCase()) { 
+      case 'senang':
+        return '😊';
+      case 'sedih':
+        return '😢';
+      case 'marah':
+        return '😠';
+      case 'tenang':
+        return '😌';
+      case 'bersemangat':
+        return '🤩'; 
+      case 'biasa saja':
+        return '😐';
+      default:
+        return ''; 
+    }
   };
 
   const renderItem = ({ item }) => {
     const isExpanded = expandedId === item.id;
+    const moodEmoji = getMoodEmoji(item.mood);
 
     return (
       <TouchableOpacity
         style={styles.journalCard}
         onPress={() => handlePressJournal(item.id)}
-        activeOpacity={0.9}
+        activeOpacity={0.8} 
       >
-        <Text style={styles.journalTitle}>{item.title}</Text>
-        <Text style={styles.journalAuthor}>oleh {item.author}</Text>
-        <Text style={styles.journalContent} numberOfLines={isExpanded ? 0 : 2}>
-          {item.content}
+        <View style={styles.cardHeader}>
+            <Text style={styles.journalTitle}>{item.title || "Tanpa Judul"}</Text>
+            {/* Tampilkan Mood dengan Emoji */}
+            {item.mood && (
+                <Text style={styles.journalMood}>
+                {moodEmoji} {item.mood}
+                </Text>
+            )}
+        </View>
+        <Text style={styles.journalAuthor}>oleh {item.author || "Anonim"}</Text>
+        {/* Tampilkan tanggal jurnal jika ada */}
+        {item.date && (
+            <Text style={styles.journalDate}>
+            {new Date(item.date).toLocaleDateString('id-ID', {
+                day: 'numeric', month: 'long', year: 'numeric'
+            })}
+            </Text>
+        )}
+        <Text style={styles.journalContent} numberOfLines={isExpanded ? undefined : 2}>
+          {item.content || "Tidak ada konten."}
         </Text>
 
         {isExpanded && (
           <View style={styles.actions}>
             <TouchableOpacity
-              style={[styles.actionButton, { backgroundColor: '#f39c12' }]}
+              style={[styles.actionButton, styles.editButton]} 
               onPress={() => handleEdit(item)}
             >
-              <Ionicons name="create-outline" size={20} color="#fff" />
+              <Ionicons name="create-outline" size={20} color={colors.textLight || "#fff"} />
               <Text style={styles.actionText}>Edit</Text>
             </TouchableOpacity>
             <TouchableOpacity
-              style={[styles.actionButton, { backgroundColor: '#e74c3c' }]}
+              style={[styles.actionButton, styles.deleteButton]} 
               onPress={() => handleDelete(item.id)}
             >
-              <Ionicons name="trash-outline" size={20} color="#fff" />
+              <Ionicons name="trash-outline" size={20} color={colors.textLight || "#fff"} />
               <Text style={styles.actionText}>Hapus</Text>
             </TouchableOpacity>
           </View>
         )}
 
         <Text style={styles.expandText}>
-          {isExpanded ? 'Tutup' : 'Baca selengkapnya...'}
+          {isExpanded ? 'Tutup Detail' : 'Baca Selengkapnya...'}
         </Text>
       </TouchableOpacity>
     );
@@ -124,20 +142,26 @@ const DailyJournal = () => {
 
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>Daftar Jurnal</Text>
-
-      <FlatList
-        data={journals}
-        renderItem={renderItem}
-        keyExtractor={(item) => item.id}
-        contentContainerStyle={{ paddingBottom: 80 }}
-      />
+      {journals.length === 0 ? (
+        <View style={styles.emptyContainer}>
+            <Ionicons name="sad-outline" size={60} color={colors.textSecondary || "#888"} />
+            <Text style={styles.emptyText}>Belum ada jurnal yang kamu tulis.</Text>
+            <Text style={styles.emptySubText}>Yuk, mulai tulis jurnal pertamamu!</Text>
+        </View>
+      ) : (
+        <FlatList
+          data={journals}
+          renderItem={renderItem}
+          keyExtractor={(item) => item.id}
+          contentContainerStyle={{ paddingBottom: 80, paddingTop: 10 }} 
+        />
+      )}
 
       <TouchableOpacity
         style={styles.fab}
-        onPress={() => navigation.navigate('JournalForm')}
+        onPress={() => navigation.navigate('JournalForm')} 
       >
-        <Ionicons name="add" size={28} color="#fff" />
+        <Ionicons name="add-outline" size={30} color={colors.textLight || "#fff"} />
       </TouchableOpacity>
     </View>
   );
@@ -148,77 +172,135 @@ export default DailyJournal;
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: colors.background,
-    paddingHorizontal: 20,
+    backgroundColor: colors.background || '#F5F5F5', 
   },
-  title: {
-    fontSize: 24,
-    fontFamily: fontType.judul,
-    color: colors.textDark,
-    marginTop: 20,
+  title: { 
+    fontSize: 26,
+    fontFamily: fontType.judul, 
+    color: colors.textDark || '#212121', 
+    marginTop: Platform.OS === 'ios' ? 40 : 20, 
     marginBottom: 15,
+    paddingHorizontal: 20, 
+    textAlign: 'center',
+  },
+  emptyContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: 40,
+  },
+  emptyText: {
+    fontSize: 18,
+    fontFamily: fontType.medium, 
+    color: colors.textSecondary || '#757575', 
+    marginTop: 15,
+    textAlign: 'center',
+  },
+  emptySubText: {
+    fontSize: 14,
+    fontFamily: fontType.regular, 
+    color: colors.textSecondary || '#757575',
+    marginTop: 8,
+    textAlign: 'center',
   },
   journalCard: {
-    backgroundColor: '#D6D6D6',
-    borderRadius: 20,
-    padding: 15,
-    marginBottom: 12,
-    elevation: 3,
+    backgroundColor: colors.cardBackground || '#FFFFFF', 
+    borderRadius: 12, 
+    padding: 18, 
+    marginHorizontal: 15, 
+    marginBottom: 15, 
+    elevation: 4, 
+    shadowColor: '#000', 
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+  },
+  cardHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 4, 
   },
   journalTitle: {
-    fontSize: 16,
+    fontSize: 18, 
     fontFamily: fontType.judul,
-    color: colors.textDark,
+    color: colors.textDark || '#333333',
+    flex: 1, 
+  },
+  journalMood: {
+    fontSize: 14,
+    fontFamily: fontType.medium,
+    color: colors.primary || '#1E88E5',
+    marginLeft: 8, 
   },
   journalAuthor: {
-    fontSize: 14,
-    fontFamily: fontType.judul2,
-    color: '#555',
-    marginTop: 4,
-  },
-  journalContent: {
     fontSize: 13,
     fontFamily: fontType.regular,
-    color: '#777',
-    marginTop: 6,
+    color: colors.textSecondary || '#666666',
+    marginBottom: 6, 
+  },
+  journalDate: {
+    fontSize: 12,
+    fontFamily: fontType.regular,
+    color: colors.textCaption || '#888888', 
+    marginBottom: 8, 
+  },
+  journalContent: {
+    fontSize: 14, 
+    fontFamily: fontType.regular,
+    color: colors.textParagraph || '#424242', 
+    lineHeight: 20, 
   },
   expandText: {
-    marginTop: 8,
+    marginTop: 12, 
     fontSize: 13,
     fontFamily: fontType.medium,
-    color: colors.primary,
+    color: colors.primary || '#007AFF', 
+    textAlign: 'right', 
   },
   fab: {
     position: 'absolute',
-    right: 20,
-    bottom: 30,
-    backgroundColor: colors.primary,
-    width: 55,
-    height: 55,
-    borderRadius: 30,
+    right: 25, 
+    bottom: 25, 
+    backgroundColor: colors.accent || colors.primary || '#007AFF', 
+    width: 60, 
+    height: 60, 
+    borderRadius: 30, 
     alignItems: 'center',
     justifyContent: 'center',
-    elevation: 6,
+    elevation: 8,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 4,
   },
   actions: {
     flexDirection: 'row',
-    justifyContent: 'flex-end',
-    marginTop: 15,
-    gap: 10,
-    marginBottom: -35,
+    justifyContent: 'flex-end', 
+    marginTop: 18, 
+    borderTopWidth: 1,
+    borderTopColor: colors.border || '#EEEEEE', 
+    paddingTop: 12, 
+    // marginBottom: -35, 
   },
   actionButton: {
-    flexDirection: 'column',
-    justifyContent: 'space-between',
+    flexDirection: 'row', 
     alignItems: 'center',
-    paddingVertical: 6,
+    paddingVertical: 8,
     paddingHorizontal: 12,
     borderRadius: 8,
+    marginLeft: 10, 
+  },
+  editButton: {
+    backgroundColor: colors.editButton || '#FFC107', 
+  },
+  deleteButton: {
+    backgroundColor: colors.deleteButton || '#F44336',
   },
   actionText: {
-    marginLeft: 6,
-    color: '#fff',
-    fontSize: 13,
+    marginLeft: 8, 
+    color: colors.textLight || '#FFFFFF', 
+    fontSize: 14,
     fontFamily: fontType.medium,
   },
 });
