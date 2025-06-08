@@ -154,16 +154,16 @@ export default function App() {
       <Tab.Navigator
         screenOptions={({ route }) => ({
           headerShown: false,
-          tabBarIcon: ({ color, size }) => {
+          tabBarIcon: ({ focused, color, size }) => {
             let iconName;
             if (route.name === 'Beranda') {
-              iconName = 'home-outline';
+              iconName = focused ? 'home' : 'home-outline';
             } else if (route.name === 'Recovery Hub') {
-              iconName = 'medkit-outline';
+              iconName = focused ? 'medkit' : 'medkit-outline';
             } else if (route.name === 'Meditasi') {
-              iconName = 'library-outline';
+              iconName = focused ? 'library' : 'library-outline';
             } else if (route.name === 'Jurnal') {
-              iconName = 'document-text-outline';
+              iconName = focused ? 'document' : 'document-text-outline';
             }
             return <Ionicons name={iconName} size={size} color={color} />;
           },
